@@ -1,4 +1,5 @@
 #define WIDTH 50
+#define HEIGHT 30
 #define LWALL 2
 #define RWALL (LWALL + WIDTH)
 
@@ -9,6 +10,9 @@
 #define TYPE5 ({{-1,0},{0,0},{1,0},{0,1}})
 #define TYPE6 ({{-1,1},{0,1},{0,0},{1,0}})
 #define TYPE7 ({{-1,0},{0,0},{0,1},{1,1}})
+
+//Escキー
+#define ESC 0x1b
 
 typedef struct{
 	int x;
