@@ -34,16 +34,16 @@ void run(){
 
 	int stacked[WIDTH][HEIGHT] = {};	//積まれたブロックを管理する
 
-	Point types[7][4] = {TYPE1,TYPE2,TYPE3,TYPE4,TYPE5,TYPE6,TYPE7}; 
+	Point types[7][4] = {TYPE1,TYPE2,TYPE3,TYPE4,TYPE5,TYPE6,TYPE7};
 	int i,k;
 
-	timeout(200);
+	timeout(WAIT_TIME);
 	srand((unsigned int)time(NULL));
 	k = rand() % 7;
 
 GAME_START:
 	mvprintw(LINES/2+5,(COLS-10)/2,"[s] : start");
-	mvprintw(LINES/2+7,(COLS-10)/2,"[ESC] : exit");
+	mvprintw(LINES/2+7,(COLS-10)/2,"[Esc] : exit");
 	for(;;){
 		key = getch();
 		if(key == 's'){
@@ -56,16 +56,22 @@ GAME_START:
 GAME:
 	nextBlock(&moving, &next, types);
 	nextBlock(&moving, &next, types);
+	//メインループ
 	while((key = getch()) != ESC){
-		clearBlock(moving);
-		clearBlock(next);
+		clear();
+		//clearBlock(moving);
+		//clearBlock(next);
 		printStage();
-
-		if(isHitBottom(moving)){
+		Block cp = moving;
+		cp.pos.y += 1;
+		if(isEnableBlock(cp, stacked) == 0){
+			addStackedBlock(stacked, moving);
 			nextBlock(&moving, &next, types);
+			judge(stacked);
 		} else {
-			moveBlock(&moving, key);
+			moveBlock(&moving, key, stacked);
 		}
+		printStackedBlock(stacked);
 		printBlock(moving);
 		printBlock(next);
 	}
@@ -86,22 +92,23 @@ void clearBlock(Block b){
 	}
 }
 
-void moveBlock(Block* b, int key){
+void moveBlock(Block* b, int key, int s[WIDTH][HEIGHT]){
+	Block cp = *b;
 	switch(key){
 	case KEY_LEFT:
-		if(isHitLWall(*b) == 0)
-			b->pos.x -= 1;
+		cp.pos.x -= 1;
 		break;
 	case KEY_RIGHT:
-		if(isHitRWall(*b) == 0)
-			b->pos.x += 1;
+		cp.pos.x += 1;
 		break;
 	case KEY_UP:
-		rotateBlock(b);
+		rotateBlock(&cp);
 		break;
 	default:
-		if(isHitBottom(*b) == 0)
-			b->pos.y += 1;
+		cp.pos.y += 1;
+	}
+	if(isEnableBlock(cp, s) == 1){
+		*b = cp;
 	}
 }
 
@@ -117,8 +124,8 @@ void rotateBlock(Block* b){
 
 void nextBlock(Block* mov, Block* nxt, Point types[7][4]){
 	int i,k;
-	k = rand() % 7;
-
+	//k = rand() % 7;
+	k = 0;
 	mov->pos.x = LWALL + WIDTH / 2;
         mov->pos.y = LINES / 2 - HEIGHT / 2;
 	for(i = 0; i < 4; i++){
@@ -127,32 +134,88 @@ void nextBlock(Block* mov, Block* nxt, Point types[7][4]){
 	}
 }
 
-int isHitBottom(Block b){
+int isEnableBlock(Block b, int s[WIDTH][HEIGHT]){
 	int btm = LINES / 2 + HEIGHT / 2;
         int i;
         for(i = 0; i < 4; i++){
-                if((b.pos.y + b.bp[i].y + 1) == btm)
-                        return 1;
+					int bX = b.pos.x + b.bp[i].x;
+					int bY = b.pos.y + b.bp[i].y;
+                if(bY == btm || bX == LWALL || bX == RWALL || s[bX - LWALL][bY - (LINES - HEIGHT) / 2] == 1)
+                        return 0;
         }
-        return 0;
+        return 1;
 }
 
-int isHitLWall(Block b){
-        int i;
-        for(i = 0; i < 4; i++){
-                if((b.pos.x + b.bp[i].x - 1) == LWALL)
-                        return 1;
-        }
-        return 0;
+void printStackedBlock(int s[WIDTH][HEIGHT]){
+	int i,j;
+	for(i = 0; i < WIDTH; i++){
+		for(j = 0; j < HEIGHT; j++){
+			if(s[i][j] != 0)
+				mvaddch(j + (LINES - HEIGHT) / 2, i + LWALL, (i % 2 == 0)?'*':'+');
+		}
+	}
 }
 
-int isHitRWall(Block b){
-        int i;
-        for(i = 0; i < 4; i++){
-                if((b.pos.x + b.bp[i].x + 1) == RWALL)
-                        return 1;
-        }
-        return 0;
+void judge(int s[WIDTH][HEIGHT]){
+	int i, j, cnt = 0;
+	int completedColumn[HEIGHT] = {};
+	for(j = 0; j < HEIGHT; j++){
+		i = 0;
+		//printf("%d ",s[i][j]);
+		while (s[i+1][j] != 0) {
+			if(i == WIDTH - 2){
+				completedColumn[j] = 1;
+				cnt++;
+				break;
+			}
+			i++;
+		}
+	}
+	if(cnt != 0)
+		eraceColumn(s, completedColumn, cnt);
+}
+
+void eraceColumn(int s[WIDTH][HEIGHT], int e[HEIGHT], int c){
+	int i, j, k;
+	int *completedColumn = (int *)malloc(sizeof(int) * c);
+	j = 0;
+	for(i = 0; i < HEIGHT; i++){
+		if(e[i] == 1){
+			completedColumn[j] = i;
+		}
+	}
+	/*
+	for(i = 0; i < 6; i++){
+		for(j = 0; j < c; j++){
+			for(k = LWALL + 1; k < RWALL; k++){
+				mvaddch(completedColumn[j] + (LINES - HEIGHT) / 2, k, (i % 2 == 0) ?' ':'O');
+			}
+			usleep(WAIT_TIME * 1000);
+		}
+	}
+	*/
+	for(i = 0; i < c; i++){
+		organizeStacked(s, completedColumn[i]);
+	}
+	free(completedColumn);
+}
+
+void organizeStacked(int s[WIDTH][HEIGHT], int o){
+	if(o == 0){
+		return;
+	}
+	int i;
+	for(i = 0; i < WIDTH; i++){
+		s[i][o] = s[i][o - 1];
+	}
+	organizeStacked(s,o - 1);
+}
+
+void addStackedBlock(int s[WIDTH][HEIGHT], Block b){
+	int i;
+	for(i = 0; i < 4; i++){
+		s[b.pos.x + b.bp[i].x - LWALL][b.pos.y + b.bp[i].y - (LINES - HEIGHT) / 2] = 1;
+	}
 }
 
 int main(void){
