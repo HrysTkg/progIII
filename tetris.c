@@ -9,30 +9,31 @@ void printStage(){
 	int i;
 	int j = 0;
 	for(i = LWALL; i <= RWALL; i++){
-		//mvaddch(LINES / 2 - HEIGHT / 2 - 1, i, ' ');
-		//mvaddch(LINES / 2 + HEIGHT / 2 + 1, i, ' ');
 		mvaddch(LINES / 2 - HEIGHT / 2 - 1, i, (j % 2 == 0)?'-':'=');
 		mvaddch(LINES / 2 + HEIGHT / 2, i, (j++ % 2 == 0)?'-':'=');
 	}
 	for(i = LINES / 2 - HEIGHT / 2; i < LINES / 2 + HEIGHT / 2; i++){
-		//mvaddch(i, LWALL, ' ');
-  		//mvaddch(i, RWALL, ' ');
-   		mvaddch(i, LWALL, '|');
-    		mvaddch(i, RWALL, '|');
+   	mvaddch(i, LWALL, '|');
+    mvaddch(i, RWALL, '|');
 	}
+	mvprintw(LINES / 2 - 2, RWALL + 5,"Next Block");
+	mvprintw(LINES / 2 - 1, RWALL + 5,"|        |");
+	mvprintw(LINES / 2    , RWALL + 5,"|        |");
+	mvprintw(LINES / 2 + 1, RWALL + 5,"|        |");
+	mvprintw(LINES / 2 + 2, RWALL + 5,"|        |");
+	mvprintw(LINES / 2 + 3, RWALL + 5,"-=-=-=-=-=");
+	mvprintw(LINES / 2 + 4, RWALL + 5, "Score:%d",score);
 }
 
 void run(){
 	int key;	//キー入力受け取り用の変数
-	int score = 0;	//スコア
+	score = 0;	//スコア
 
 	Block moving, next;	//動いているブロックと次のブロック
 	int blockInitX = LWALL + WIDTH / 2;
 	int blockInitY = LINES / 2 - HEIGHT / 2;
-	next.pos.x = COLS / 2 + 10;
+	next.pos.x = RWALL + 10;
 	next.pos.y = LINES / 2;
-
-	//int stacked[WIDTH][HEIGHT] = {};	//積まれたブロックを管理する
 
 	Point types[7][4] = {TYPE1,TYPE2,TYPE3,TYPE4,TYPE5,TYPE6,TYPE7};
 	int i,k;
@@ -43,7 +44,8 @@ void run(){
 
 GAME_START:
 	mvprintw(LINES/2+5,(COLS-10)/2,"[s] : start");
-	mvprintw(LINES/2+7,(COLS-10)/2,"[Esc] : exit");
+	mvprintw(LINES/2+7,(COLS-10)/2,"[r] : ranking");
+	mvprintw(LINES/2+9,(COLS-10)/2,"[Esc] : exit");
 	for(;;){
 		key = getch();
 		if(key == 's'){
@@ -59,8 +61,6 @@ GAME:
 	//メインループ
 	while((key = getch()) != ESC){
 		clear();
-		//clearBlock(moving);
-		//clearBlock(next);
 		printStage();
 		Block cp = moving;
 		cp.pos.y += 1;
@@ -132,8 +132,8 @@ void rotateBlock(Block* b){
 
 void nextBlock(Block* mov, Block* nxt, Point types[7][4]){
 	int i,k;
-	//k = rand() % 7;
-	k = 0;
+	k = rand() % 7;
+	//k = 0;
 	mov->pos.x = LWALL + WIDTH / 2;
         mov->pos.y = LINES / 2 - HEIGHT / 2;
 	for(i = 0; i < 4; i++){
@@ -144,14 +144,14 @@ void nextBlock(Block* mov, Block* nxt, Point types[7][4]){
 
 int isEnableBlock(Block b){
 	int btm = LINES / 2 + HEIGHT / 2;
-        int i;
-        for(i = 0; i < 4; i++){
-					int bX = b.pos.x + b.bp[i].x;
-					int bY = b.pos.y + b.bp[i].y;
-                if(bY == btm || bX == LWALL || bX == RWALL || stacked[bX - LWALL][bY - (LINES - HEIGHT) / 2] == 1)
-                        return 0;
-        }
-        return 1;
+  int i;
+  for(i = 0; i < 4; i++){
+		int bX = b.pos.x + b.bp[i].x;
+		int bY = b.pos.y + b.bp[i].y;
+    if(bY == btm || bX == LWALL || bX == RWALL || stacked[bX - LWALL][bY - (LINES - HEIGHT) / 2] == 1)
+      return 0;
+  }
+  return 1;
 }
 
 void printStackedBlock(){
@@ -221,6 +221,7 @@ void eraceColumn(int e[HEIGHT], int c){
 
 void organizeStacked(int cc){
 	if(cc == 0){
+		score += 100;
 		return;
 	}
 	int i;

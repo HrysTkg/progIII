@@ -1,4 +1,4 @@
-#define WIDTH 6
+#define WIDTH 20
 #define HEIGHT 20
 #define LWALL 2
 #define RWALL (LWALL + WIDTH)
@@ -15,8 +15,10 @@
 #define ESC 0x1b
 
 #define WAIT_TIME 200
+#define RECORD_FILE "record.txt"
 
 int stacked[WIDTH][HEIGHT];
+int score;
 
 typedef struct{
 	int x;
@@ -45,3 +47,6 @@ void addStackedBlock(Block b);	//ブロックを積む関数
 void eraceColumn(int e[HEIGHT], int c);	//揃ったブロック行を消す
 void organizeStacked(int o);	//積まれたブロックの整理
 int isGameOver();	//ゲームオーバー判定
+
+void showRanking();
+void saveScore();
