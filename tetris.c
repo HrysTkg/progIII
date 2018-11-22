@@ -25,9 +25,15 @@ void printStage(){
 	mvprintw(LINES / 2 + 4, RWALL + 5, "Score:%d",score);
 }
 
+void printTitle(){
+	mvprintw(LINES/2-3,COLS/2 - 7,"WELCOME TO TETRIS");
+	mvprintw(LINES/2  ,COLS/2 - 5,"[s] : Start");
+	mvprintw(LINES/2+2,COLS/2 - 5,"[r] : Ranking");
+	mvprintw(LINES/2+4,COLS/2 - 5,"[Esc] : Exit");
+}
+
 void run(){
 	int key;	//キー入力受け取り用の変数
-	score = 0;	//スコア
 
 	Block moving, next;	//動いているブロックと次のブロック
 	int blockInitX = LWALL + WIDTH / 2;
@@ -36,25 +42,31 @@ void run(){
 	next.pos.y = LINES / 2;
 
 	Point types[7][4] = {TYPE1,TYPE2,TYPE3,TYPE4,TYPE5,TYPE6,TYPE7};
-	int i,k;
+	int i,j,k;
 
 	timeout(WAIT_TIME);
 	srand((unsigned int)time(NULL));
 	k = rand() % 7;
 
 GAME_START:
-	mvprintw(LINES/2+5,(COLS-10)/2,"[s] : start");
-	mvprintw(LINES/2+7,(COLS-10)/2,"[r] : ranking");
-	mvprintw(LINES/2+9,(COLS-10)/2,"[Esc] : exit");
+	printTitle();
 	for(;;){
 		key = getch();
 		if(key == 's'){
 			clear();
-			goto GAME;
+			goto GAME_INIT;
+		}else if(key == 'r'){
+			showRanking();
+			printTitle();
 		}else if(key == ESC){
 			return;
 		}
 	}
+GAME_INIT:
+	score = 0;
+	for(i = 0; i < WIDTH; i++)
+		for(j = 0; j < HEIGHT; j++)
+			stacked[i][j] = 0;
 GAME:
 	nextBlock(&moving, &next, types);
 	nextBlock(&moving, &next, types);
@@ -70,6 +82,7 @@ GAME:
 			if(isGameOver())
 				goto GAME_OVER;
 			nextBlock(&moving, &next, types);
+			score += 10;
 		} else {
 			moveBlock(&moving, key);
 		}
@@ -77,12 +90,30 @@ GAME:
 		printBlock(moving);
 		printBlock(next);
 	}
+	if(key == ESC) goto END;
 GAME_OVER:
 	for(i = 0; i < 11; i++){
 		(i % 2 == 0)?clearStackedBlock():printStackedBlock();
 		refresh();
 		usleep(WAIT_TIME * 1000);
 	}
+	clear();
+	mvprintw(LINES/2    , COLS/2 - 5,"GAME OVER");
+	mvprintw(LINES/2 + 2, COLS/2 - 15,"Do you want to join Ranking? score:%d",score);
+	mvprintw(LINES/2 + 4, COLS/2 - 9,"[y] : Yes , [n] : No");
+	while((key = getch()) != ESC){
+		if(key == 'y'){
+			saveScore();
+			break;
+		}
+		else if(key == 'n')
+			break;
+		else if(key == ESC)
+			goto END;
+	}
+	clear();
+	goto GAME_START;
+END:
 	return;
 }
 
@@ -246,6 +277,50 @@ int isGameOver(){
 			return 1;
 	}
 	return 0;
+}
+
+void showRanking(){
+	FILE *fp = fopen(RECORD_FILE,"r");
+	Record rcd[10];
+	int i,j;
+	i = 0;
+	while(fscanf(fp,"%s %d",rcd[i].name, &rcd[i].score) != EOF){
+		if(++i == 10)
+			break;
+	}
+	clear();
+	int cnt = i;
+	for(i = 0; i < cnt; i++){
+		for(j = 0; j < cnt - 1 - i; j++){
+			if(rcd[j].score < rcd[j + 1].score){
+      				swap(Record, rcd[j], rcd[j + 1]);
+			}
+  		}
+	}
+	for(i = 0; i < cnt; i++){
+		mvprintw(LINES / 2 - cnt + 2*i, (COLS - 10) / 2, "No.%d %s : %dpoints", i + 1,rcd[i].name, rcd[i].score);
+	}
+	mvprintw(LINES / 2 + cnt + 2,(COLS - 10)/2,"[ESC] : Exit");
+	while(getch() != ESC){}
+	clear();
+	fclose(fp);
+}
+
+void saveScore(){
+	FILE *fp = fopen(RECORD_FILE, "a");
+	clear();
+	mvprintw(LINES/2,(COLS-10)/2,"Enter your name");
+	move(LINES/2 + 2,(COLS-10)/2);
+	refresh();
+	echo();
+	char name[64];
+	timeout(-1);
+	getstr(name);
+	fprintf(fp, "%s %d\n",name, score);
+	noecho();
+	clear();
+	timeout(WAIT_TIME);
+	fclose(fp);
 }
 
 int main(void){

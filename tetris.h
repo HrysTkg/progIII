@@ -1,6 +1,6 @@
 #define WIDTH 20
 #define HEIGHT 20
-#define LWALL 2
+#define LWALL (COLS/2 - WIDTH)
 #define RWALL (LWALL + WIDTH)
 
 #define TYPE1 {{-2,0},{-1.0},{0,0},{1,0}}
@@ -17,6 +17,8 @@
 #define WAIT_TIME 200
 #define RECORD_FILE "record.txt"
 
+#define swap(type,a,b) {type t=a;a=b;b=t;}
+
 int stacked[WIDTH][HEIGHT];
 int score;
 
@@ -30,6 +32,11 @@ typedef struct{
 	Point pos;	//中心座標
 	int life;
 }Block;
+
+typedef struct {
+	char name[64];
+	int score;
+}Record;
 
 void printStage();	//ステージを描画する関数
 void run();
