@@ -324,36 +324,44 @@ void showRanking(){
 	FILE *fp = fopen(RECORD_FILE,"r");	//ファイルをオープン ファイル名はtetris.hでマクロ定義
 	Record rcd[10];				//ランキングは10位まで表示させるため,要素数は10とする
 	int i, j, k;
-	char n[64];
-	int s;
-	j = 0;
+	char n[64];				//名前を受け取る変数
+	int s;					//スコアを受け取る変数
+	
+	//以下のループでは,全ての記録を読み込み,適切なrcdの要素へ値を保存していく
+	j = 0;					//rcdの有効な要素をカウントする
 	while(fscanf(fp,"%s %d",n, &s) != EOF){
-		if(j < 10){
-			rcd[j].score = 0;
-			j++;
+		if(j < 10){			//rcdにまだ空きがあるなら
+			rcd[j].score = 0;	//その要素を初期化し
+			j++;			//有効な要素をカウントアップ
 		}
-		for(i = 0; i < j; i++){
-			if(s > rcd[i].score){
-				if(i < 9){
+		for(i = 0; i < j; i++){		//有効なrcdを走査する
+			if(s > rcd[i].score){	//読み込んだスコアの値の方がrcd[i]より高かった場合,rcd[i]へ読み込んだ記録を挿入
+				if(i < 9){	//挿入場所がrcdの最後尾以外の場合,元々あった記録をズラす必要あり
+					//挿入場所以降の記録を1つ後ろへズラす
 					for(k = j - 1; k >= i; k--){
 						strcpy(rcd[k].name, rcd[k - 1].name);
 						rcd[k].score = rcd[k - 1].score;
 					}
 				}
+				//rcd[i]へ読み込んだ記録を保存
 				strcpy(rcd[i].name, n);
 				rcd[i].score = s;
 				break;
 			}
 		}
 	}
+	
+	//以下はrcdを有効範囲まで表示する
 	clear();
 	for(i = 0; i < j; i++){
 		mvprintw(LINES / 2 - j + 2*i, (COLS - 10) / 2, "No.%d %s : %dpoints", i + 1,rcd[i].name, rcd[i].score);
 	}
 	mvprintw(LINES / 2 + j + 2,(COLS - 10)/2,"[ESC] : Exit");
-	while(getch() != ESC){}
+	
+	while(getch() != ESC){}			//Escキーが押されるまで無限ループ
+	
 	clear();
-	fclose(fp);
+	fclose(fp);				//ファイルクローズ
 }
 
 /* 現在のスコアをファイルに保存する関数 */
