@@ -43,6 +43,7 @@ typedef struct {
 
 /* 以下関数宣言 */
 void printStage();
+void printTitle();
 void run();
 void printBlock(Block b);
 void moveBlock(Block* b, int key);

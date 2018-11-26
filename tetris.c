@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <stdlib.h>
+#include <string.h>
 #include "tetris.h"
 
 /* ゲーム実行関数 */
@@ -53,7 +54,7 @@ GAME:
 	while((key = getch()) != ESC){
 		clear();
 		printStage();
-		
+
 		Block cp = moving;	//移動ブロックのコピーを作成する
 		cp.pos.y += 1;		//コピーを1つ下へ動かしてみる
 		//コピーが最下地点または他ブロックに衝突しているか調べる
@@ -81,7 +82,7 @@ GAME_OVER:
 		refresh();
 		usleep(WAIT_TIME * 1000);
 	}
-	
+
 	//以下ゲームオーバーのメッセージを表示
 	clear();
 	mvprintw(LINES/2    , COLS/2 - 5,"GAME OVER");
@@ -284,7 +285,7 @@ void eraceColumn(int e[HEIGHT], int c){
 
 /* 引数で与えられた行を消去し,ブロックの並びを整える関数 */
 void organizeStacked(int cc){
-	/* 処理は再帰で行う. 引数が0の場合,処理が完了. 
+	/* 処理は再帰で行う. 引数が0の場合,処理が完了.
 	それ以外は,引数の示す行をその一つ上の行で上書きし,cc - 1を新たに引数として再帰 */
 	if(cc == 0){
 		score += 100;
@@ -322,25 +323,34 @@ int isGameOver(){
 void showRanking(){
 	FILE *fp = fopen(RECORD_FILE,"r");	//ファイルをオープン ファイル名はtetris.hでマクロ定義
 	Record rcd[10];				//ランキングは10位まで表示させるため,要素数は10とする
-	int i,j;
-	i = 0;
-	while(fscanf(fp,"%s %d",rcd[i].name, &rcd[i].score) != EOF){
-		if(++i == 10)
-			break;
+	int i, j, k;
+	char n[64];
+	int s;
+	j = 0;
+	while(fscanf(fp,"%s %d",n, &s) != EOF){
+		if(j < 10){
+			rcd[j].score = 0;
+			j++;
+		}
+		for(i = 0; i < j; i++){
+			if(s > rcd[i].score){
+				if(i < 9){
+					for(k = j - 1; k >= i; k--){
+						strcpy(rcd[k].name, rcd[k - 1].name);
+						rcd[k].score = rcd[k - 1].score;
+					}
+				}
+				strcpy(rcd[i].name, n);
+				rcd[i].score = s;
+				break;
+			}
+		}
 	}
 	clear();
-	int cnt = i;
-	for(i = 0; i < cnt; i++){
-		for(j = 0; j < cnt - 1 - i; j++){
-			if(rcd[j].score < rcd[j + 1].score){
-      				swap(Record, rcd[j], rcd[j + 1]);
-			}
-  		}
+	for(i = 0; i < j; i++){
+		mvprintw(LINES / 2 - j + 2*i, (COLS - 10) / 2, "No.%d %s : %dpoints", i + 1,rcd[i].name, rcd[i].score);
 	}
-	for(i = 0; i < cnt; i++){
-		mvprintw(LINES / 2 - cnt + 2*i, (COLS - 10) / 2, "No.%d %s : %dpoints", i + 1,rcd[i].name, rcd[i].score);
-	}
-	mvprintw(LINES / 2 + cnt + 2,(COLS - 10)/2,"[ESC] : Exit");
+	mvprintw(LINES / 2 + j + 2,(COLS - 10)/2,"[ESC] : Exit");
 	while(getch() != ESC){}
 	clear();
 	fclose(fp);
